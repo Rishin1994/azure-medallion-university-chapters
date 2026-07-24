@@ -1,0 +1,32 @@
+{
+  "name": "tr_daily_0600_utc",
+  "properties": {
+    "description": "Refresh the university_chapters data product daily by 06:00 UTC (the contract's freshness SLA).",
+    "type": "ScheduleTrigger",
+    "typeProperties": {
+      "recurrence": {
+        "frequency": "Day",
+        "interval": 1,
+        "startTime": "__START_TIME__",
+        "timeZone": "UTC",
+        "schedule": {
+          "hours": [6],
+          "minutes": [0]
+        }
+      }
+    },
+    "pipelines": [
+      {
+        "pipelineReference": {
+          "referenceName": "pl_university_chapters_daily",
+          "type": "PipelineReference"
+        },
+        "parameters": {
+          "storage_account": "__STORAGE_ACCOUNT__",
+          "lake_container": "lake",
+          "source": "live"
+        }
+      }
+    ]
+  }
+}
