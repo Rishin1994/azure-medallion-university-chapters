@@ -22,10 +22,27 @@ runtimes are [deprecated](https://learn.microsoft.com/en-us/azure/synapse-analyt
 | Piece | Resource | Role |
 |---|---|---|
 | Lake | ADLS Gen2 account, `lake` filesystem | `bronze/`, `silver/`, `gold/`, `quarantine/`, `_runs/`, `fixtures/` paths |
-| Compute | Synapse Spark pool `sparkmed` (runtime 3.5, 3 × Small, auto-pause 15 min) | Runs the notebook; bills only while running |
-| Code | Notebook `university_chapters_medallion` | The whole medallion run, parameterised (`storage_account`, `lake_container`, `source`, `run_id`) |
-| Orchestration | Pipeline `pl_university_chapters_daily` | One `SynapseNotebook` activity, 1 retry, fails loudly |
+| Compute | Synapse Spark pool `sparkmed` (runtime 3.5, 3 × Small, auto-pause 15 min) | Runs the notebooks; bills only while running |
+| Code | Notebooks `nb_00_config`, `nb_01_bronze_ingest`, `nb_02_silver_transform`, `nb_03_gold_publish` | One notebook per medallion layer plus a shared config/DQ notebook referenced via `%run` |
+| Orchestration | Pipeline `pl_university_chapters_daily` | Three chained `SynapseNotebook` activities (Bronze → Silver → Gold), fails loudly at the first broken layer |
 | Schedule | Trigger `tr_daily_0600_utc` | Daily **06:00 UTC** — the contract's freshness SLA |
+
+### How the notebooks are wired
+
+```
+pl_university_chapters_daily
+  ├─ BronzeIngest   (nb_01)  — lands raw payload; exits {"run_id", "bronze_dir", ...metadata}
+  ├─ SilverTransform(nb_02)  — run_id = Bronze exit; exits the count ledger JSON
+  └─ GoldPublish    (nb_03)  — run_id from Bronze, silver_counts from Silver; MERGE + _runs summary
+```
+
+The pipeline passes values between layers with Synapse expressions over notebook **exit
+values** (`@json(activity('BronzeIngest').output.status.Output.result.exitValue).run_id`),
+so each layer is restartable and independently debuggable: every notebook also runs by
+hand with just `storage_account` (+ `run_id` for Silver/Gold — Gold derives the ledger
+from the lake when `silver_counts` isn't supplied). `nb_00_config` holds the shared
+constants, DQ predicates and lake helpers; the three layer notebooks include it with
+`%run nb_00_config`, keeping one authoritative definition of the DQ vocabulary.
 
 ## What's upgraded vs the local run
 
@@ -100,12 +117,15 @@ rows with OR/WA legitimately empty.
 
 ## Verification status of this folder
 
-The notebook's cells were executed end-to-end locally on the pool's exact Spark
-version (PySpark 3.5, Java 17): fixture ledger, gold contents, quarantine contents,
-re-run convergence, delete-vanished semantics and the empty-batch hard-fail all pass.
-The Delta-specific calls (`DeltaTable.merge`, `DESCRIBE HISTORY`, time travel) use
-standard Delta Lake 3.2 API and run on the pool as-is; they were exercised locally
-through a parquet-backed shim because this build environment cannot fetch Delta jars.
+All four notebooks were executed cell-by-cell locally on the pool's exact Spark
+version (PySpark 3.5, Java 17), chained exactly as the pipeline chains them
+(`%run` emulated, exit values passed Bronze → Silver → Gold): fixture ledger, gold
+and quarantine contents, re-run convergence, delete-vanished semantics, standalone
+Gold's derived ledger, the empty-batch hard-fail and the missing-`run_id` guard all
+pass. The Delta-specific calls (`DeltaTable.merge`, `DESCRIBE HISTORY`, time travel)
+use standard Delta Lake 3.2 API and run on the pool as-is; they were exercised
+locally through a parquet-backed shim because this build environment cannot fetch
+Delta jars.
 
 ## Costs and teardown
 
@@ -123,7 +143,11 @@ az group delete --name rg-university-chapters --yes
 azure-synapse/
 ├── README.md                                   # this file
 ├── deploy.sh                                   # end-to-end az CLI runbook
-├── notebook/university_chapters_medallion.ipynb  # the medallion run (9 cells)
-├── pipeline/pl_university_chapters_daily.json  # SynapseNotebook activity + params
+├── notebook/
+│   ├── nb_00_config.ipynb                      # shared config + DQ rules (%run target)
+│   ├── nb_01_bronze_ingest.ipynb               # Bronze: raw landing, fail-loud, exits run_id
+│   ├── nb_02_silver_transform.ipynb            # Silver: DQ-Q1 quarantine, dedupe, DQ-W1
+│   └── nb_03_gold_publish.ipynb                # Gold: gates + atomic MERGE + run summary
+├── pipeline/pl_university_chapters_daily.json  # 3 chained SynapseNotebook activities
 └── trigger/tr_daily_0600_utc.json              # daily 06:00 UTC schedule
 ```

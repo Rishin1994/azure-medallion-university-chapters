@@ -71,9 +71,12 @@ az storage fs file upload --account-name "$STG" --file-system "$LAKE_FS" \
   --source ../fixtures/university_chapters_fixture.json \
   --path fixtures/university_chapters_fixture.json --auth-mode login --overwrite true --output none
 
-step "7/9 Import the medallion notebook"
-az synapse notebook import --workspace-name "$WS" --name university_chapters_medallion \
-  --file @notebook/university_chapters_medallion.ipynb --spark-pool-name "$POOL" --output none
+step "7/9 Import the four medallion notebooks (config + one per layer)"
+for NB in nb_00_config nb_01_bronze_ingest nb_02_silver_transform nb_03_gold_publish; do
+  az synapse notebook import --workspace-name "$WS" --name "$NB" \
+    --file @"notebook/$NB.ipynb" --spark-pool-name "$POOL" --output none
+  echo "  imported $NB"
+done
 
 step "8/9 Pipeline + daily 06:00 UTC trigger"
 render() { # substitute placeholders and strip to the 'properties' body az expects
