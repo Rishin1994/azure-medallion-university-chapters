@@ -1,0 +1,68 @@
+{
+  "name": "pl_university_chapters_daily",
+  "properties": {
+    "description": "Daily Bronze->Silver->Gold publish of the university_chapters data product (fails loudly on API errors, empty batch, or CA=0).",
+    "activities": [
+      {
+        "name": "RunMedallionNotebook",
+        "type": "SynapseNotebook",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "0.02:00:00",
+          "retry": 1,
+          "retryIntervalInSeconds": 300,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebook": {
+            "referenceName": "university_chapters_medallion",
+            "type": "NotebookReference"
+          },
+          "parameters": {
+            "storage_account": {
+              "value": {
+                "value": "@pipeline().parameters.storage_account",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "lake_container": {
+              "value": {
+                "value": "@pipeline().parameters.lake_container",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "source": {
+              "value": {
+                "value": "@pipeline().parameters.source",
+                "type": "Expression"
+              },
+              "type": "string"
+            }
+          },
+          "sparkPool": {
+            "referenceName": "__SPARK_POOL__",
+            "type": "BigDataPoolReference"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "storage_account": {
+        "type": "string",
+        "defaultValue": "__STORAGE_ACCOUNT__"
+      },
+      "lake_container": {
+        "type": "string",
+        "defaultValue": "lake"
+      },
+      "source": {
+        "type": "string",
+        "defaultValue": "live"
+      }
+    },
+    "annotations": ["university-chapters", "medallion", "data-product"]
+  }
+}
