@@ -1,14 +1,14 @@
 {
   "name": "pl_university_chapters_daily",
   "properties": {
-    "description": "Daily Bronze->Silver->Gold publish of the university_chapters data product (fails loudly on API errors, empty batch, or CA=0).",
+    "description": "Daily medallion publish of the university_chapters data product: Bronze -> Silver -> Gold as three chained notebook activities. run_id flows from the Bronze exit value; the Silver count ledger flows into Gold. Any notebook raise fails the run loudly.",
     "activities": [
       {
-        "name": "RunMedallionNotebook",
+        "name": "BronzeIngest",
         "type": "SynapseNotebook",
         "dependsOn": [],
         "policy": {
-          "timeout": "0.02:00:00",
+          "timeout": "0.01:00:00",
           "retry": 1,
           "retryIntervalInSeconds": 300,
           "secureOutput": false,
@@ -16,7 +16,7 @@
         },
         "typeProperties": {
           "notebook": {
-            "referenceName": "university_chapters_medallion",
+            "referenceName": "nb_01_bronze_ingest",
             "type": "NotebookReference"
           },
           "parameters": {
@@ -37,6 +37,111 @@
             "source": {
               "value": {
                 "value": "@pipeline().parameters.source",
+                "type": "Expression"
+              },
+              "type": "string"
+            }
+          },
+          "sparkPool": {
+            "referenceName": "__SPARK_POOL__",
+            "type": "BigDataPoolReference"
+          }
+        }
+      },
+      {
+        "name": "SilverTransform",
+        "type": "SynapseNotebook",
+        "dependsOn": [
+          {
+            "activity": "BronzeIngest",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "policy": {
+          "timeout": "0.01:00:00",
+          "retry": 0,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebook": {
+            "referenceName": "nb_02_silver_transform",
+            "type": "NotebookReference"
+          },
+          "parameters": {
+            "storage_account": {
+              "value": {
+                "value": "@pipeline().parameters.storage_account",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "lake_container": {
+              "value": {
+                "value": "@pipeline().parameters.lake_container",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "run_id": {
+              "value": {
+                "value": "@json(activity('BronzeIngest').output.status.Output.result.exitValue).run_id",
+                "type": "Expression"
+              },
+              "type": "string"
+            }
+          },
+          "sparkPool": {
+            "referenceName": "__SPARK_POOL__",
+            "type": "BigDataPoolReference"
+          }
+        }
+      },
+      {
+        "name": "GoldPublish",
+        "type": "SynapseNotebook",
+        "dependsOn": [
+          {
+            "activity": "SilverTransform",
+            "dependencyConditions": ["Succeeded"]
+          }
+        ],
+        "policy": {
+          "timeout": "0.01:00:00",
+          "retry": 0,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebook": {
+            "referenceName": "nb_03_gold_publish",
+            "type": "NotebookReference"
+          },
+          "parameters": {
+            "storage_account": {
+              "value": {
+                "value": "@pipeline().parameters.storage_account",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "lake_container": {
+              "value": {
+                "value": "@pipeline().parameters.lake_container",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "run_id": {
+              "value": {
+                "value": "@json(activity('BronzeIngest').output.status.Output.result.exitValue).run_id",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "silver_counts": {
+              "value": {
+                "value": "@activity('SilverTransform').output.status.Output.result.exitValue",
                 "type": "Expression"
               },
               "type": "string"
