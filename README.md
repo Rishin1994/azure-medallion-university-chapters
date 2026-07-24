@@ -74,6 +74,18 @@ pipeline hard-fails — non-zero exit, nothing published as "success" — when:
 - **Bronze**: append-by-run (each run in its own `ingest_date=…/run_id=…` folder) — re-runs add history, never destroy it.
 - **Silver/Gold**: full **overwrite of the versioned path** per run, at `chapter_id` grain. Chosen over MERGE because the snapshot is small and the source is a full extract; re-running any number of times converges to the same state. On Databricks/Fabric this becomes a Delta `MERGE` keyed on `chapter_id` (see trade-offs).
 
+## Running it on Azure (Synapse Spark)
+
+The [`azure-synapse/`](azure-synapse/) folder contains a complete, deploy-ready Azure
+implementation: the medallion run as a parameterised Synapse **Spark notebook** on
+**Delta Lake / ADLS Gen2** (Gold published via an atomic `MERGE` on `chapter_id` with
+delete-vanished semantics), a Synapse **pipeline** wrapping it, a **daily 06:00 UTC
+trigger** matching the contract SLA, and a one-script `az` CLI runbook
+([`azure-synapse/deploy.sh`](azure-synapse/deploy.sh)) that provisions the workspace,
+pool (runtime 3.5), roles and artifacts end to end. See
+[`azure-synapse/README.md`](azure-synapse/README.md) for the runbook, verification
+queries and costs.
+
 ## Repo layout
 
 ```
@@ -87,6 +99,8 @@ pipeline/
 fixtures/               # Real-shaped API response with seeded bad rows
 tests/                  # Unit DQ tests + offline end-to-end assertions
 docs/                   # Architecture note, Data Product Contract
+azure-synapse/          # Deploy-ready Azure implementation (notebook, pipeline,
+                        # trigger, az CLI runbook) — see azure-synapse/README.md
 ```
 
 ## Trade-offs, and what production would add
