@@ -1,0 +1,94 @@
+{
+  "objectIdFieldName": "OBJECTID",
+  "uniqueIdField": {"name": "OBJECTID", "isSystemMaintained": true},
+  "globalIdFieldName": "",
+  "geometryType": "esriGeometryPoint",
+  "spatialReference": {"wkid": 4326, "latestWkid": 4326},
+  "fields": [
+    {"name": "OBJECTID", "type": "esriFieldTypeOID", "alias": "ObjectID"},
+    {"name": "University_Chapter", "type": "esriFieldTypeString", "alias": "University Chapter"},
+    {"name": "City", "type": "esriFieldTypeString", "alias": "City"},
+    {"name": "State", "type": "esriFieldTypeString", "alias": "State"},
+    {"name": "ChapterID", "type": "esriFieldTypeString", "alias": "Chapter ID"},
+    {"name": "MEVR_RD", "type": "esriFieldTypeString", "alias": "Regional Director"}
+  ],
+  "features": [
+    {
+      "attributes": {
+        "OBJECTID": 1,
+        "University_Chapter": "California Polytechnic State University",
+        "City": "San Luis Obispo",
+        "State": "CA",
+        "ChapterID": "CA-0355",
+        "MEVR_RD": "Fixture Director A"
+      },
+      "geometry": {"x": -120.663, "y": 35.274}
+    },
+    {
+      "attributes": {
+        "OBJECTID": 2,
+        "University_Chapter": "Chico State",
+        "City": "Chico",
+        "State": "CA",
+        "ChapterID": "CA-0300",
+        "MEVR_RD": "Fixture Director B"
+      },
+      "geometry": {"x": -121.835, "y": 39.74}
+    },
+    {
+      "attributes": {
+        "OBJECTID": 3,
+        "University_Chapter": "Fresno State",
+        "City": "Fresno",
+        "State": "CA",
+        "ChapterID": "CA-0362",
+        "MEVR_RD": "Fixture Director C"
+      },
+      "geometry": {"x": -119.74, "y": 36.824}
+    },
+    {
+      "attributes": {
+        "OBJECTID": 9001,
+        "University_Chapter": "Synthetic Bad-Coordinates University (seeds DQ-Q1)",
+        "City": "Portland",
+        "State": "OR",
+        "ChapterID": "OR-9001",
+        "MEVR_RD": "Fixture Director D"
+      },
+      "geometry": {"x": -190.5, "y": 45.52}
+    },
+    {
+      "attributes": {
+        "OBJECTID": 9002,
+        "University_Chapter": "Synthetic Missing-Geometry University (seeds DQ-Q1)",
+        "City": "Seattle",
+        "State": "WA",
+        "ChapterID": "WA-9002",
+        "MEVR_RD": "Fixture Director E"
+      },
+      "geometry": null
+    },
+    {
+      "attributes": {
+        "OBJECTID": 9003,
+        "University_Chapter": "Synthetic Unknown-City University (seeds DQ-W1)",
+        "City": "UNKNOWN",
+        "State": "CA",
+        "ChapterID": "CA-9003",
+        "MEVR_RD": "Fixture Director F"
+      },
+      "geometry": {"x": -118.244, "y": 34.052}
+    },
+    {
+      "attributes": {
+        "OBJECTID": 9004,
+        "University_Chapter": "Chico State University",
+        "City": "Chico",
+        "State": "CA",
+        "ChapterID": "CA-0300",
+        "MEVR_RD": "Fixture Director B"
+      },
+      "geometry": {"x": -121.835, "y": 39.74}
+    }
+  ]
+}
