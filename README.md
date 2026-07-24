@@ -77,10 +77,12 @@ pipeline hard-fails — non-zero exit, nothing published as "success" — when:
 ## Running it on Azure (Synapse Spark)
 
 The [`azure-synapse/`](azure-synapse/) folder contains a complete, deploy-ready Azure
-implementation: the medallion run as a parameterised Synapse **Spark notebook** on
-**Delta Lake / ADLS Gen2** (Gold published via an atomic `MERGE` on `chapter_id` with
-delete-vanished semantics), a Synapse **pipeline** wrapping it, a **daily 06:00 UTC
-trigger** matching the contract SLA, and a one-script `az` CLI runbook
+implementation: one Synapse **Spark notebook per medallion layer** (bronze / silver /
+gold, plus a shared config+DQ notebook) on **Delta Lake / ADLS Gen2** — Gold published
+via an atomic `MERGE` on `chapter_id` with delete-vanished semantics — a Synapse
+**pipeline** chaining the three layers and passing `run_id`/counts through notebook
+exit values, a **daily 06:00 UTC trigger** matching the contract SLA, and a one-script
+`az` CLI runbook
 ([`azure-synapse/deploy.sh`](azure-synapse/deploy.sh)) that provisions the workspace,
 pool (runtime 3.5), roles and artifacts end to end. See
 [`azure-synapse/README.md`](azure-synapse/README.md) for the runbook, verification
